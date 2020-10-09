@@ -20,8 +20,8 @@ python manage.py createsuperuser # 创建超级用户
 python manage.py runserver # 启动web服务,默认127.0.0.1：8000,可以在后面加上指定ip：port
 ```
 ####3.数据库设置
-```
-'''默认
+```python
+'''默认数据库sqlite3
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -29,6 +29,7 @@ DATABASES = {
     }
 }
 '''
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -39,4 +40,30 @@ DATABASES = {
         'PORT': '3306',
     }
 }
+```
+设置使用mysql数据库
+####4.浏览器跨域问题解决
+```python
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'corsheaders', # 加入
+]
+
+MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', # 加入
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+CORS_ORIGIN_ALLOW_ALL = True # 加入
 ```
