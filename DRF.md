@@ -1,5 +1,5 @@
 #Django Restful Framework知识点记录
-*文档可参考：*[Django Restful Framework中文文档](https://q1mi.github.io/Django-REST-framework-documentation/api-guide/serializers_zh/)
+*文档可参考：*[Django Restful Framework文档](https://www.django-rest-framework.org/api-guide/viewsets/)
 ##一.使用Django Restful Framework的准备工作和配置
 ####1.需要安装模块
 ```
@@ -77,3 +77,66 @@ class EquipmentSerializer(serializers.ModelSerializer):
 - 以本例进行解释：category_display， owner_display， status都是Equipment模型中没有的字段，通过定义serializers.SerializerMethodField，并写上相应的获取方法：get_category_display(self, obj), get_owner_display(self, obj), get_status(self, obj)返回想得到的值.
 在方法中func(self, obj), obj 为 Equipment的对象实例.
 - 前端进行查询的时候，后端返回的时候就会加入这些额外信息
+
+####2.访问权限设置
+```python
+# 方式一
+class EquipmentInfoViewset(viewsets.ModelViewSet):
+    queryset = Equipment.objects.all()
+    serializer_class = EquipmentSerializer
+    permission_classes_by_action = {'default': [],
+                                    'create': [permissions.IsAdminUser],
+                                    'retrieve': [permissions.IsAuthenticated],
+                                    'update': [permissions.IsAdminUser],
+                                    'partial_update': [permissions.IsAdminUser],
+                                    'destroy': [permissions.IsAdminUser],
+                                    'list': [permissions.IsAuthenticated]
+                                    }
+
+    # 重写get_permissions
+    def get_permissions(self):
+        """
+            A viewset that provides default `create()`, `retrieve()`, `update()`,
+            `partial_update()`, `destroy()` and `list()` actions.
+            """
+        try:
+            # return permission_classes depending on `action`
+            return [permission() for permission in self.permission_classes_by_action[self.action]]
+        except KeyError:
+            # 没用明确权限的话使用默认权限
+            # action is not set return default permission_classes
+            return [permission() for permission in self.permission_classes_by_action['default']]
+
+# 方式二
+def get_permissions(self):
+    """
+    Instantiates and returns the list of permissions that this view requires.
+    """
+    if self.action == 'list':
+        permission_classes = [IsAuthenticated]
+    else:
+        permission_classes = [IsAdmin]
+    return [permission() for permission in permission_classes]
+```
+
+####3.自定义视图集动作(参考https://www.django-rest-framework.org/api-guide/viewsets/)
+```python
+#urls.py 视图集路由设置
+from myapp.views import UserViewSet
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'users', UserViewSet, basename='user')
+urlpatterns = router.urls
+```
+```python
+# 用于整个集合
+@action(detail=False , methods=['get'])
+def recent_users(self, request):
+    ...
+# 用于当个对象
+@action(detail=True, methods=['post'], permission_classes=[IsAdminOrIsSelf])
+def set_password(self, request, pk=None):
+    ...
+```
+使用@action装饰器，以上两个操作的路由为/users/recent_users/和/users/{pk}/set_password/
