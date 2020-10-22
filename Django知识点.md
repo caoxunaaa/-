@@ -1,7 +1,7 @@
 #Django知识点记录
 *文档可参考：*[Django官方文档](https://docs.djangoproject.com/en/3.1/)
 ##一.使用Django的准备工作和配置
-####1.需要安装模块
+####1.安装模块
 ```
 pip install Django
 pip install django-cors-headers //解决浏览器跨域的问题
@@ -20,6 +20,7 @@ python manage.py createsuperuser # 创建超级用户
 python manage.py runserver # 启动web服务,默认127.0.0.1：8000,可以在后面加上指定ip：port
 ```
 ####3.数据库设置
+- 设置使用mysql数据库
 ```python
 '''默认数据库sqlite3
 DATABASES = {
@@ -41,7 +42,7 @@ DATABASES = {
     }
 }
 ```
-设置使用mysql数据库
+
 ####4.浏览器跨域问题解决
 ```python
 INSTALLED_APPS = [
@@ -66,4 +67,20 @@ MIDDLEWARE = [
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True # 加入
+```
+##二.项目中点滴知识记录
+####1.Django Q F查询
+- Q对象（django.db.models.Q）可以对关键字参数进行封装,组合使用&, |, ~操作符
+```python
+from django.db.models import Q
+from .models import Equipment
+queryset = Equipment.objects.filter(Q(sn=device) | ~Q(id=7))
+queryset = Equipment.objects.filter(Q(sn=device) | Q(internal_coding=device)).extra(select={'device__name': 'name', 'device__sn': 'sn', 'device__id': 'id', 'device__assets': 'assets', 'device__internal_coding': 'internal_coding'}).values('device__name', 'device__sn', 'device__id', 'device__assets', 'device__internal_coding')
+```
+####2.Django extra得到自己想要的字段
+- extra可以指定一个或者多个参数select, where
+```python
+Entry.objects.extra(select={'is_recent': "pub_date > '2006-01-01'"})
+Entry.objects.extra(where=['id IN (3, 4, 5, 20)'])
+
 ```

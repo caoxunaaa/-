@@ -7,7 +7,7 @@ vue 2.9.6
 npm install element-ui -S
 
 ##二.常用知识点（一般以我项目中使用代码为例）
-####1.axios异步通信 csrf_token跨域问题处理
+###1.axios异步通信 csrf_token跨域问题处理
 ```js
 // main.js
 import axios from 'axios'
@@ -19,8 +19,28 @@ axios.interceptors.request.use((config) => {
   return config
 })
 ```
-
-####2.父组件给子组件传值
+###2.在nginx部署中解决跨域问题
+config\index.js
+```js
+module.exports = {
+  dev: {
+    // Paths
+    assetsSubDirectory: 'static',
+    assetsPublicPath: '/',
+    proxyTable: {
+      '/api': {  //使用"/api"来代替"http://f.apiplus.c"
+        target: 'http://47.115.52.186:8001/', //源地址
+        changeOrigin: true, //改变源
+        pathRewrite: {
+          '^/api': '' //路径重写
+        }
+      }
+    }
+    // ...
+  }
+}
+```
+###3.父组件给子组件传值
 ```vue（DeviceRepairManage）
 <!--父组件给子组件（DetailRepairInfomation）传值-->
     <el-table :data="tableData">
@@ -61,6 +81,5 @@ export default {
     this.detail_info = this.msg
   }
 ```
-
 父组件和子组件都是el-table表格，子组件是父组件表格展开的信息;
 父传子主要通过在父组件v-model绑定数据，在子组件进行用props进行数据的接收。
