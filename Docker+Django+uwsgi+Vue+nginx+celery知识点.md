@@ -10,8 +10,8 @@
 - mysql
 - 部署：uwsgi nginx
 - 工具： WinSCP
-- 前后端工程项目：[github.com](https://github.com/caoxunaaa/SuperxonWork/tree/master/SuperxonWebSite)
-##二.Docker上运行django+uwsgi(参考[Docker 部署 Django+Uwsgi+Nginx+Vue](https://testerhome.com/topics/25440))
+- 前后端工程项目：[SuperxonWebSite](https://github.com/caoxunaaa/SuperxonWork/tree/master/SuperxonWebSite)
+##二.Docker部署前后端(参考[Docker 部署 Django+Uwsgi+Nginx+Vue](https://testerhome.com/topics/25440))
 ###1.通过WinSCP把PC上的Django工程转移到阿里云上
 ```
 root@iZwz9bxltrtxtsix34kqlrZ:~/DockerProject/api_automation_test# ls
@@ -287,12 +287,25 @@ sh start.sh
 - ####展示结果
 能在外网浏览器中输入http://47.115.52.186中看到相应的网页
 ##三.Celery异步任务（项目中需要定时处理任务）
-###1.安装celery, redis(需要先安装redis服务器)
+###1.linux安装redis服务器)
+```
+sudo apt-get install redis-server
+```
+修改redis配置文件 /etc/redis/redis.conf
+```
+#bind 127.0.0.1  这里是只能本地使用
+bind 0.0.0.0  #这样是允许任意IP访问
+```
+启动redis
+```
+redis-server /etc/redis/redis.conf
+```
+###2.安装celery, redis
 ```
 pip install django-redis
 pip install celery
 ```
-###2.配置相应的文件(工程项目为SuperxonWebSite,其下的根为SuperxonWebSite，其它应用为EquipmentManagement, user)
+###3.配置相应的文件(工程项目为SuperxonWebSite,其下的根为SuperxonWebSite，其它应用为EquipmentManagement, user)
 ####- settings.py
 ```python
 redis_url = 'redis://127.0.0.1:6379/0'
@@ -374,8 +387,7 @@ def device_list(self, request):
 ```
 res = tasks.mul.delay(1, 3)     #delay方法中添加相应的参数
 print(res.task_id)              #获取任务id，在redis中保存为celery-task-meta-[id],[id]类似fcb4328d-fc31-4ae5-9fe6-457f5529f870
-
-###3.celery启动命令
+###4.celery启动命令
 ####- 在工程目录下使用命令celery -A SuperxonWebSite beat -l info ,这是开启定时发送任务到celery任务队列中
 得到打印信息
 ```
@@ -443,4 +455,74 @@ windows下更改启动命令
 pip install eventlet #安装eventlet
 celery -A SuperxonWebSite worker --pool=eventlet -l info
 ```
+##四.DRF JWT验证
+###1.JWT原理：[参考]（https://www.cnblogs.com/fiona-zhong/p/9951054.html）
+按我的理解简单描述就是，前端给后端发送用户密码，通过JWT内部算法得到一个Token验证码并返回给前端保存，此后前端在请求中都需要
+将Token放到header中的Authorization发给后端，后端验证JWT有效性，通过之后再进行相应的操作。
+###2.安装DRF JWT
+```
+pip install djangorestframework-jwt
+```
+###3.后端配置DRF JWT
+`settings.py`
+```
+REST_FRAMEWORK = {
+    #默认全局配置，需要验证Token
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        # 引入JWT认证机制，当客户端将jwt token传递给服务器之后
+        # 此认证机制会自动校验jwt token的有效性，无效会直接返回401(未认证错误)
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+}
+
+# JWT扩展配置
+JWT_AUTH = {
+    # 设置生成jwt token的有效时间
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+}
+```
+局部不需要Token认证的视图类，比如登录、注册和登出等等，可以在视图类下加入authentication_classes = []，例如
+```python
+class UserViewset(viewsets.ModelViewSet):
+    authentication_classes = []
+```
+`urls.py`
+```python
+from rest_framework_jwt.views import obtain_jwt_token
+urlpatterns = [
+    #前端登录时访问此路由： POST （username, password）,返回给前端一个 Token。
+    path('authorizations/', obtain_jwt_token), 
+]
+```
+###4.前端Vue对JWT的保存和使用
+`UserLogin.vue`
+```
+that.$axios({
+    method: 'post',
+    url: '/authorizations/',
+    data: {
+      username: that.ruleForm['username'],
+      password: that.ruleForm['password']
+    }
+}).then(function (response) {
+    const res = response.data
+    console.log(res)
+    //将返回的Token保存在localStorage中
+    localStorage.setItem('Token', res['token'])
+})
+```
+`main.js`
+```js
+axios.interceptors.request.use((config) => {
+  config.headers['X-Requested-With'] = 'XMLHttpRequest'
+  let regex = /.*csrftoken=([^;.]*).*$/ // 用于从cookie中匹配 csrftoken值
+  config.headers['X-CSRFToken'] = document.cookie.match(regex) === null ? null : document.cookie.match(regex)[1]
+  //在axios异步请求中的headers中的Authorization加入'JWT [Token]'
+  config.headers.Authorization = 'JWT ' + localStorage.getItem('Token')
+  return config
+})
+```
+注：在登出或者注销的时候，应该删除localStorage中的Token.
 
