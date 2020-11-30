@@ -266,6 +266,19 @@ location /handle/ {
             include uwsgi_params;
         }
 ```
+
+-注：还有个注意的点就是前端vue代码中跨域访问设置config/index.js
+```
+proxyTable: {
+  '/api': {  //使用"/api"来代替"http://f.apiplus.c"
+    target: 'http://47.115.52.186:8001/', //源地址
+    changeOrigin: true, //改变源
+    pathRewrite: {
+      '^/api': '' //路径重写
+    }
+  }
+},
+```
 ###4.开始部署docker--前端
 - ####创建Docker镜像
 ```

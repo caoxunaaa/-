@@ -84,3 +84,26 @@ Entry.objects.extra(select={'is_recent': "pub_date > '2006-01-01'"})
 Entry.objects.extra(where=['id IN (3, 4, 5, 20)'])
 
 ```
+####3.Django执行原生sql语句
+```python
+from django.db import connection
+
+with connection.cursor() as cursor:
+    sql = '''select A.device, A.sn, A.internal_coding, A.assets, A.maintenance_item, MAX(A.maintenance_time) from EquipmentManagement_devicemaintenancerecord A group by A.device, A.maintenance_item'''
+    cursor.execute(sql)
+    row = cursor.fetchall()
+```
+####3.Django将查询数据导出csv文件
+```python
+file_path_abs = 'example.csv'
+with open(file_path_abs, "w", newline='') as csv_file:
+    writer = csv.writer(csv_file)
+    # 表头
+    writer.writerow(['设备', 'SN', '设备编号', '固资号', '保养项目', '保养时间'])
+    with connection.cursor() as cursor:
+        sql = '''select A.device, A.sn, A.internal_coding, A.assets, A.maintenance_item, MAX(A.maintenance_time) from EquipmentManagement_devicemaintenancerecord A group by A.device, A.maintenance_item'''
+        cursor.execute(sql)
+        row = cursor.fetchall()
+        # 向CSV添加数据
+        writer.writerows(row)
+```
