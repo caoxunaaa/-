@@ -107,3 +107,17 @@ with open(file_path_abs, "w", newline='') as csv_file:
         # 向CSV添加数据
         writer.writerows(row)
 ```
+####4.数据库迁移（sqlite3 -> mysql）
+- 从原来的数据库导出数据json文件
+```
+python manage.py dumpdata > superxon.json
+python manage.py dumpdata --database default > superxon.json # 指定数据库
+```
+- 将json文件导出新数据库
+```
+python manage.py loaddata superxon.json
+python manage.py loaddata --database slave superxon.json # 指定数据库
+python manage.py dumpdata --exclude=contenttypes --exclude=auth.Permission default > superxon.json # 加入报错重复导入，可以执行exclude这个参数,忽略者两个表
+```
+
+
