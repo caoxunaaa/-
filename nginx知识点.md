@@ -183,7 +183,7 @@ http {
         
 ```
 主要增加下面语句
-```editorconfig
+```
 #!!加入django反向代理，使前端axios能够通过匹配http://47.115.52.186:8001/handle/xxxxx获得相应的数据
 location /handle/ {
    proxy_pass http://47.115.52.186:8001;

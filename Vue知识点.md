@@ -40,6 +40,15 @@ module.exports = {
   }
 }
 ```
+- 这样操作会把在axios异步通信中/api/开头的url替换成http://47.115.52.186:8001/,例如
+```
+$axios({
+    method: 'get'
+    url:'/api/handle/users/'  //实际上跨域获取的是http://47.115.52.186:8001/handle/users/
+})
+```
+- 注：'/api/handle/users/'  最后的  /   很重要，一定要加上
+
 ###3.父组件给子组件传值
 ```vue（DeviceRepairManage）
 <!--父组件给子组件（DetailRepairInfomation）传值-->
